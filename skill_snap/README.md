@@ -32,13 +32,13 @@ It provides a seamless experience to capture skills, categorize them, and presen
 ### Skill Management
 <div align="center">
   <img src="assets/img1.png" width="200" alt="Add Skill">
-  <img src="assets/img5.png" width="200" alt="Skill Details">
+  <img src="assets/img7.png" width="200" alt="Skill Details">
   <img src="assets/img6.png" width="200" alt="Edit Skill">
 </div>
 
 ### Portfolio Views
 <div align="center">
-  <img src="assets/img7.png" width="200" alt="Grid View">
+  <img src="assets/img5.png" width="200" alt="Grid View">
   <img src="assets/img8.png" width="200" alt="List View">
   <img src="assets/img9.png" width="200" alt="Category Filter">
 </div>
