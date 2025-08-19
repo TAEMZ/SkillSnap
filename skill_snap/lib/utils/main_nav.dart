@@ -99,9 +99,9 @@ class _PersistentNavigationState extends State<PersistentNavigation> {
   Widget _buildConvexAppBar() {
     return ConvexAppBar(
       style: TabStyle.reactCircle, // Changed from fixedCircle to reactCircle
-      backgroundColor: Colors.grey.shade900,
-      color: Colors.grey.shade400,
-      activeColor: Colors.teal.shade600,
+      backgroundColor: const Color.fromARGB(255, 163, 214, 155),
+      color: const Color.fromARGB(255, 58, 44, 44),
+      activeColor: const Color.fromARGB(255, 8, 12, 12),
       items: const [
         TabItem(icon: Icons.home, title: 'Home'),
         TabItem(icon: Icons.school, title: 'Learn'),
