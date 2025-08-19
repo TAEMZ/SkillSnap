@@ -33,7 +33,7 @@ SkillSnap is a peer-to-peer skill-sharing application built with Flutter, design
 
 ### Skill Management
 <div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
-  <img src="assets/img1.png" width="200" alt="Add Skill">
+  <img src="assets/img1.png" width="200" alt="dashboard">
   <img src="assets/img7.png" width="200" alt="Skill Details">
   <img src="assets/img6.png" width="200" alt="Edit Skill">
 </div>
