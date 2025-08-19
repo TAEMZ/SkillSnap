@@ -26,7 +26,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 <div align="center">
   <img src="assets/img15.png" width="200" alt="Home Screen">
   <img src="assets/img3.png" width="200" alt="Navigation Drawer">
-  <img src="assets/img2.png" width="200" alt="Categories">
+  <img src="assets/img11.png" width="200" alt="Categories">
 </div>
 
 ### Skill Management
@@ -46,7 +46,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 ### Sharing & Profiles
 <div align="center">
   <img src="assets/img10.png" width="200" alt="Share Skills">
-  <img src="assets/img11.png" width="200" alt="User Profile">
+  <img src="assets/img2.png" width="200" alt="User Profile">
   <img src="assets/img12.png" width="200" alt="Settings">
 </div>
 
