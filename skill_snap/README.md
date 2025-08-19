@@ -31,7 +31,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 
 ### Skill Management
 <div align="center">
-  <img src="assets/img4.png" width="200" alt="Add Skill">
+  <img src="assets/img15.png" width="200" alt="Add Skill">
   <img src="assets/img5.png" width="200" alt="Skill Details">
   <img src="assets/img6.png" width="200" alt="Edit Skill">
 </div>
@@ -54,7 +54,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 <div align="center">
   <img src="assets/img13.png" width="200" alt="Search Functionality">
   <img src="assets/img14.png" width="200" alt="Dark Mode">
-  <img src="assets/img1.png" width="200" alt="Skill Analytics">
+  <img src="assets/img4.png" width="200" alt="Skill Analytics">
 </div>
 
 ---
