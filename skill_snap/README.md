@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![GitHub stars](https://img.shields.io/github/stars/TAEMZ/SkillSnap?style=social)
 
-SkillSnap is a peer-to-peer skill-sharing application built with Flutter, designed to empower users to exchange knowledge in an interactive and engaging way. The platform enables real-time skill sharing through chats, video calls, and live sessions, allowing users to use knowledge itself as a form of currency. Beyond direct exchanges, SkillSnap enhances learning by recommending online courses tailored to users’ skill sets, offering daily problem-solving challenges, and providing tools to track progress and showcase skills in a structured portfolio format.
+SkillSnap is a peer-to-peer skill-sharing application built with Flutter, designed to empower users to exchange knowledge in an interactive and engaging way. The platform enables real-time skill sharing through chats, video calls, and live sessions, allowing users to use knowledge itself as a form of currency. Beyond direct exchanges, SkillSnap enhances learning by recommending online courses tailored to users' skill sets, offering daily problem-solving challenges, and providing tools to track progress and showcase skills in a structured portfolio format.
 
 ---
 
@@ -22,36 +22,38 @@ SkillSnap is a peer-to-peer skill-sharing application built with Flutter, design
 ## 📸 App Screenshots
 
 ### Home & Navigation
-<div align="center">
+<div align="center" style="margin-bottom: 30px;">
   <img src="assets/img15.png" width="200" alt="Home Screen">
-  <br/>
+</div>
+
+<div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
   <img src="assets/img3.png" width="200" alt="Navigation Drawer">
   <img src="assets/img11.png" width="200" alt="Categories">
 </div>
 
 ### Skill Management
-<div align="center">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
   <img src="assets/img1.png" width="200" alt="Add Skill">
   <img src="assets/img7.png" width="200" alt="Skill Details">
   <img src="assets/img6.png" width="200" alt="Edit Skill">
 </div>
 
 ### Portfolio Views
-<div align="center">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
   <img src="assets/img5.png" width="200" alt="Grid View">
   <img src="assets/img8.png" width="200" alt="List View">
   <img src="assets/img9.png" width="200" alt="Category Filter">
 </div>
 
 ### Sharing & Profiles
-<div align="center">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
   <img src="assets/img10.png" width="200" alt="Share Skills">
   <img src="assets/img2.png" width="200" alt="User Profile">
   <img src="assets/img4.png" width="200" alt="Settings">
 </div>
 
 ### Additional Features
-<div align="center">
+<div align="center" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 40px;">
   <img src="assets/img13.png" width="200" alt="Search Functionality">
   <img src="assets/img14.png" width="200" alt="Dark Mode">
   <img src="assets/img12.png" width="200" alt="Skill Analytics">
@@ -61,13 +63,13 @@ SkillSnap is a peer-to-peer skill-sharing application built with Flutter, design
 
 ## 🛠️ Tech Stack
 
-| Tool / Framework 
-|-----------------
-| Flutter         
-| Dart             
-| Superbase 
-| Android/iOS SDK  
-|Gemini AI
+| Tool / Framework | 
+|------------------|
+| Flutter          | 
+| Dart             | 
+| Supabase         |
+| Android/iOS SDK  |
+| Gemini AI        |
 
 ---
 
