@@ -20,6 +20,45 @@ It provides a seamless experience to capture skills, categorize them, and presen
 
 ---
 
+## 📸 App Screenshots
+
+### Home & Navigation
+<div align="center">
+  <img src="assets/img1.png" width="200" alt="Home Screen">
+  <img src="assets/img2.png" width="200" alt="Navigation Drawer">
+  <img src="assets/img3.png" width="200" alt="Categories">
+</div>
+
+### Skill Management
+<div align="center">
+  <img src="assets/img4.png" width="200" alt="Add Skill">
+  <img src="assets/img5.png" width="200" alt="Skill Details">
+  <img src="assets/img6.png" width="200" alt="Edit Skill">
+</div>
+
+### Portfolio Views
+<div align="center">
+  <img src="assets/img7.png" width="200" alt="Grid View">
+  <img src="assets/img8.png" width="200" alt="List View">
+  <img src="assets/img9.png" width="200" alt="Category Filter">
+</div>
+
+### Sharing & Profiles
+<div align="center">
+  <img src="assets/img10.png" width="200" alt="Share Skills">
+  <img src="assets/img11.png" width="200" alt="User Profile">
+  <img src="assets/img12.png" width="200" alt="Settings">
+</div>
+
+### Additional Features
+<div align="center">
+  <img src="assets/img13.png" width="200" alt="Search Functionality">
+  <img src="assets/img14.png" width="200" alt="Dark Mode">
+  <img src="assets/img15.png" width="200" alt="Skill Analytics">
+</div>
+
+---
+
 ## 🛠️ Tech Stack
 
 | Tool / Framework | Icon |
@@ -36,4 +75,4 @@ It provides a seamless experience to capture skills, categorize them, and presen
 1. **Clone the repository**
    ```bash
    git clone https://github.com/TAEMZ/SkillSnap.git
-   cd SkillSnap/skill_snap
+   cd SkillSnap
