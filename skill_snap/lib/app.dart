@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Touch Mirror',
+      title: 'skill snap',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: user != null ? const DashboardScreen() : const LoginScreen(),
     );

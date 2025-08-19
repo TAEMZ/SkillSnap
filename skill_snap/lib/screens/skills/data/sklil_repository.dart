@@ -70,6 +70,47 @@ class SkillRepository {
     }
   }
 
+  // In SkillRepository
+  Future<List<SkillMatch>> getSentRequests(String userId) async {
+    final response = await _client
+        .from('matches')
+        .select('''
+        *,
+        requester:users!requester_id(id, full_name, profile_url),
+        provider:users!provider_id(id, full_name, profile_url),
+        skill:skills!skill_id(id, title),
+        offer_skill:skills!offer_skill_id(id, title)
+      ''')
+        .eq('requester_id', userId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((json) => SkillMatch.fromJson(json)).toList();
+  }
+
+  Future<List<SkillMatch>> getReceivedRequests(String userId) async {
+    final response = await _client
+        .from('matches')
+        .select('''
+        *,
+        requester:users!requester_id(id, full_name, profile_url),
+        provider:users!provider_id(id, full_name, profile_url),
+        skill:skills!skill_id(id, title),
+        offer_skill:skills!offer_skill_id(id, title)
+      ''')
+        .eq('provider_id', userId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((json) => SkillMatch.fromJson(json)).toList();
+  }
+
+  Future<void> deleteRequest(String matchId) async {
+    // First delete all related messages
+    await _client.from('messages').delete().eq('match_id', matchId);
+
+    // Then delete the match
+    await _client.from('matches').delete().eq('id', matchId);
+  }
+
   Future<List<Skill>> fetchUserSkills(String userId) async {
     try {
       final response = await _client
@@ -84,11 +125,6 @@ class SkillRepository {
       // Handle case where response might be a String (error message)
       if (response is String) {
         throw Exception('Supabase returned error: $response');
-      }
-
-      // Ensure response is a List before mapping
-      if (response is! List) {
-        throw Exception('Unexpected response format from Supabase');
       }
 
       return response.map((json) => Skill.fromJson(json)).toList();
@@ -146,8 +182,26 @@ class SkillRepository {
 
   Future<void> deleteSkill(String skillId) async {
     try {
+      // Delete related messages and matches first
+      final matchResponse = await _client
+          .from('matches')
+          .select('id')
+          .eq('skill_id', skillId);
+
+      for (var match in matchResponse) {
+        await _client.from('messages').delete().eq('match_id', match['id']);
+        await _client.from('matches').delete().eq('id', match['id']);
+      }
+
+      // Delete related ratings
+      await _client.from('ratings').delete().eq('skill_id', skillId);
+
+      // Delete the skill
       await _client.from('skills').delete().eq('id', skillId);
+
+      print('Deleted skill $skillId successfully');
     } catch (e) {
+      print('Supabase delete error: $e');
       throw Exception('Failed to delete skill: $e');
     }
   }

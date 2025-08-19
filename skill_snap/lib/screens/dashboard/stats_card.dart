@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 class StatsCard extends StatelessWidget {
   final String value;
   final String label;
+  final String title;
+
   final IconData icon;
   final Color color;
 
@@ -13,6 +15,7 @@ class StatsCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.color,
+    required this.title,
   });
 
   @override

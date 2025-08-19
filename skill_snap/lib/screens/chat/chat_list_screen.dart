@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -14,103 +15,187 @@ class ChatListScreen extends StatefulWidget {
   State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
-class _ChatListScreenState extends State<ChatListScreen> {
+class _ChatListScreenState extends State<ChatListScreen>
+    with TickerProviderStateMixin {
   final SupabaseClient _supabase = Supabase.instance.client;
-  List<String> _selectedConversations = [];
-  String _filter = 'all'; // 'all', 'today', 'week', 'month', 'unread'
+  final List<String> _selectedConversations = [];
+  String _filter = 'all';
   String _searchQuery = '';
   bool _showSearch = false;
+  late AnimationController _animationController;
+  late AnimationController _pulseController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _pulseController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.3, 1.0, curve: Curves.elasticOut),
+      ),
+    );
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final userId = _supabase.auth.currentUser?.id;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: _buildAppBar(theme),
-      body: Column(
-        children: [
-          if (_showSearch) _buildSearchField(colorScheme),
-          _buildFilterChips(colorScheme),
-          Expanded(
-            child:
-                userId == null
-                    ? _buildLoginPrompt()
-                    : _buildConversationList(userId, theme),
-          ),
+      backgroundColor: Colors.black,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          _buildAppBar(),
+          if (_showSearch) _buildSearchField(),
+          _buildFilterChips(),
+          userId == null
+              ? SliverFillRemaining(child: _buildLoginPrompt())
+              : _buildConversationList(userId),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showFilterDialog,
-        backgroundColor: colorScheme.primary,
-        child: Icon(Icons.filter_list, color: colorScheme.onPrimary),
-      ),
+      floatingActionButton: _buildFilterFAB(),
     );
   }
 
-  AppBar _buildAppBar(ThemeData theme) {
-    return AppBar(
-      title:
-          _selectedConversations.isEmpty
-              ? _showSearch
-                  ? const SizedBox.shrink()
-                  : const Text(
-                    'Messages',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  )
-              : Text('${_selectedConversations.length} selected'),
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.black,
+      flexibleSpace: FlexibleSpaceBar(
+        title:
+            _selectedConversations.isEmpty
+                ? _showSearch
+                    ? const SizedBox.shrink()
+                    : const Text(
+                      'Messages',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    )
+                : Text(
+                  '${_selectedConversations.length} selected',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.black, Colors.greenAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+      ),
       actions: [
         IconButton(
-          icon: Icon(_showSearch ? Icons.close : Icons.search),
-          onPressed:
-              () => setState(() {
-                _showSearch = !_showSearch;
-                if (!_showSearch) _searchQuery = '';
-              }),
+          icon: Icon(
+            _showSearch ? Icons.close : Icons.search,
+            color: Colors.white,
+          ),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) _searchQuery = '';
+            });
+          },
         ),
         if (_selectedConversations.isNotEmpty)
           IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _deleteSelectedConversations,
+            icon: const Icon(Icons.delete, color: Colors.white),
+            onPressed: () {
+              HapticFeedback.mediumImpact();
+              _deleteSelectedConversations();
+            },
           ),
       ],
     );
   }
 
-  Widget _buildSearchField(ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search conversations...',
-          prefixIcon: Icon(
-            Icons.search,
-            color: colorScheme.onSurface.withOpacity(0.6),
+  Widget _buildSearchField() {
+    return SliverToBoxAdapter(
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey[900],
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[700]!),
           ),
-          suffixIcon:
-              _searchQuery.isNotEmpty
-                  ? IconButton(
-                    icon: Icon(
-                      Icons.clear,
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                    onPressed: () => setState(() => _searchQuery = ''),
-                  )
-                  : null,
-          filled: true,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Search conversations...',
+              hintStyle: TextStyle(color: Colors.grey[400]),
+              prefixIcon: Icon(Icons.search, color: Colors.greenAccent),
+              suffixIcon:
+                  _searchQuery.isNotEmpty
+                      ? IconButton(
+                        icon: Icon(Icons.clear, color: Colors.grey[400]),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                      : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+            ),
+            style: const TextStyle(color: Colors.white),
+            onChanged:
+                (value) => setState(() => _searchQuery = value.toLowerCase()),
           ),
         ),
-        onChanged:
-            (value) => setState(() => _searchQuery = value.toLowerCase()),
       ),
     );
   }
 
-  Widget _buildFilterChips(ColorScheme colorScheme) {
+  Widget _buildFilterChips() {
     const filters = {
       'all': 'All',
       'unread': 'Unread',
@@ -119,57 +204,91 @@ class _ChatListScreenState extends State<ChatListScreen> {
       'month': 'This Month',
     };
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children:
-            filters.entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
+    return SliverToBoxAdapter(
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Container(
+          height: 60,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: filters.length,
+            itemBuilder: (context, index) {
+              final entry = filters.entries.elementAt(index);
+              final isSelected = _filter == entry.key;
+
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                child: FilterChip(
                   label: Text(entry.value),
-                  selected: _filter == entry.key,
-                  onSelected: (selected) => setState(() => _filter = entry.key),
-                  selectedColor: colorScheme.primary.withOpacity(0.2),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _filter = entry.key);
+                  },
+                  backgroundColor: Colors.grey[800],
+                  selectedColor: Colors.greenAccent.withOpacity(0.2),
+                  checkmarkColor: Colors.greenAccent,
                   labelStyle: TextStyle(
-                    color:
-                        _filter == entry.key
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
+                    color: isSelected ? Colors.greenAccent : Colors.grey[300],
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
-                  shape: StadiumBorder(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
                     side: BorderSide(
                       color:
-                          _filter == entry.key
-                              ? colorScheme.primary
-                              : Colors.grey.shade300,
+                          isSelected ? Colors.greenAccent : Colors.grey[600]!,
                     ),
                   ),
                 ),
               );
-            }).toList(),
+            },
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildLoginPrompt() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            'Please log in to view messages',
-            style: Theme.of(context).textTheme.titleMedium,
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.grey[900]!, Colors.grey[850]!],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.grey[700]!),
           ),
-        ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chat_bubble_outline,
+                size: 64,
+                color: Colors.grey[400],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Please log in to view messages',
+                style: TextStyle(
+                  color: Colors.grey[300],
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildConversationList(String userId, ThemeData theme) {
+  Widget _buildConversationList(String userId) {
     return StreamBuilder<List<Conversation>>(
       stream: _supabase
           .from('conversations_with_users')
@@ -180,20 +299,39 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 _filterConversations(data.map(Conversation.fromJson).toList()),
           ),
       builder: (context, snapshot) {
-        if (snapshot.hasError)
-          return _buildErrorState(snapshot.error.toString());
-        if (!snapshot.hasData) return _buildLoadingState();
+        if (snapshot.hasError) {
+          return SliverFillRemaining(
+            child: _buildErrorState(snapshot.error.toString()),
+          );
+        }
+        if (!snapshot.hasData) {
+          return SliverFillRemaining(child: _buildLoadingState());
+        }
 
         final conversations = snapshot.data!;
-        if (conversations.isEmpty) return _buildEmptyState();
+        if (conversations.isEmpty) {
+          return SliverFillRemaining(child: _buildEmptyState());
+        }
 
-        return ListView.builder(
-          padding: const EdgeInsets.only(top: 8),
-          itemCount: conversations.length,
-          itemBuilder: (context, index) {
+        return SliverList(
+          delegate: SliverChildBuilderDelegate((context, index) {
             final conversation = conversations[index];
-            return _buildConversationTile(conversation, theme);
-          },
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(0, 0.3 + (index * 0.1)),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: _animationController,
+                  curve: Interval(index * 0.1, 1.0, curve: Curves.elasticOut),
+                ),
+              ),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: _buildConversationTile(conversation),
+              ),
+            );
+          }, childCount: conversations.length),
         );
       },
     );
@@ -201,99 +339,135 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _buildErrorState(String error) {
     return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.red[900]!.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.red[400]!, width: 2),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red[400], size: 64),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading messages',
+              style: TextStyle(
+                color: Colors.red[400],
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error,
+              style: const TextStyle(color: Colors.white70),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.greenAccent),
+          ),
           const SizedBox(height: 16),
           Text(
-            'Error loading messages',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
+            'Loading conversations...',
+            style: TextStyle(color: Colors.white70, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLoadingState() {
-    return ListView.builder(
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: Theme.of(context).cardColor,
-            border: Border(
-              bottom: BorderSide(
-                color: Theme.of(context).dividerColor.withOpacity(0.1),
-                width: 1,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.grey[900]!, Colors.grey[850]!],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.grey[700]!),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Icon(
+                    Icons.chat_bubble_outline,
+                    size: 64,
+                    color: Colors.grey[400],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No conversations yet',
+              style: TextStyle(
+                color: Colors.grey[300],
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ),
-          child: Row(
-            children: [
-              const CircleAvatar(radius: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(height: 16, width: 120, color: Colors.grey[300]),
-                    const SizedBox(height: 8),
-                    Container(height: 12, width: 200, color: Colors.grey[200]),
-                  ],
-                ),
-              ),
-            ],
+            const SizedBox(height: 8),
+            Text(
+              'Start connecting with others through skill matches',
+              style: TextStyle(color: Colors.grey[500], fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterFAB() {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _pulseAnimation.value,
+          child: FloatingActionButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _showFilterDialog();
+            },
+            backgroundColor: Colors.greenAccent,
+            foregroundColor: Colors.black,
+            child: const Icon(Icons.filter_list),
           ),
         );
       },
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 64,
-            color: Theme.of(context).disabledColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No conversations yet',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start a new conversation by matching with someone',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
-
   List<Conversation> _filterConversations(List<Conversation> conversations) {
     final now = DateTime.now();
     return conversations.where((conv) {
-      // Apply search filter
       if (_searchQuery.isNotEmpty &&
           !conv.otherUserName.toLowerCase().contains(_searchQuery) &&
           !conv.lastMessage.toLowerCase().contains(_searchQuery)) {
         return false;
       }
 
-      // Apply time/unread filters
       switch (_filter) {
         case 'unread':
           return conv.unreadMessagesCount > 0;
@@ -315,202 +489,254 @@ class _ChatListScreenState extends State<ChatListScreen> {
     }).toList();
   }
 
-  Widget _buildConversationTile(Conversation conversation, ThemeData theme) {
+  Widget _buildConversationTile(Conversation conversation) {
     final isSelected = _selectedConversations.contains(conversation.id);
-    final colorScheme = theme.colorScheme;
 
-    return Dismissible(
-      key: Key(conversation.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.red,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        child: const Icon(Icons.delete, color: Colors.white, size: 30),
-      ),
-      confirmDismiss: (direction) async {
-        final shouldDelete = await _showDeleteConfirmation(conversation);
-        return shouldDelete; // Must return bool (true to dismiss, false to cancel)
-      },
-      onDismissed: (direction) async {
-        final confirmed = await _showDeleteConfirmation(conversation);
-        if (confirmed == true) {}
-
-        // Delete from the database (Supabase or wherever you're storing them)
-        await Supabase.instance.client
-            .from('conversations')
-            .delete()
-            .eq('match_id', conversation.matchId);
-
-        // Optionally show a SnackBar
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${conversation.otherUserName} dismissed')),
-        );
-      },
-
-      child: InkWell(
-        onLongPress: () => _toggleSelection(conversation.id),
-        onTap: () {
-          if (_selectedConversations.isNotEmpty) {
-            _toggleSelection(conversation.id);
-          } else {
-            _navigateToChatScreen(conversation);
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color:
-                isSelected
-                    ? colorScheme.primary.withOpacity(0.1)
-                    : colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              if (!isSelected)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-            ],
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              if (_selectedConversations.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Checkbox(
-                    value: isSelected,
-                    onChanged: (_) => _toggleSelection(conversation.id),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                  ),
-                ),
-              _buildAvatar(conversation, colorScheme),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            conversation.otherUserName,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          DateFormat(
-                            'h:mm a',
-                          ).format(conversation.lastMessageTime),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            conversation.lastMessage,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (conversation.unreadMessagesCount > 0)
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              conversation.unreadMessagesCount.toString(),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        gradient:
+            isSelected
+                ? LinearGradient(
+                  colors: [
+                    Colors.greenAccent.withOpacity(0.2),
+                    Colors.green.withOpacity(0.2),
                   ],
+                )
+                : LinearGradient(
+                  colors: [Colors.grey[900]!, Colors.grey[850]!],
+                ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSelected ? Colors.greenAccent : Colors.grey[700]!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Dismissible(
+        key: Key(conversation.id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.red[800]!, Colors.red[600]!],
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.delete, color: Colors.white, size: 32),
+              const SizedBox(height: 4),
+              Text(
+                'Delete',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
+          ),
+        ),
+        confirmDismiss: (direction) async {
+          HapticFeedback.heavyImpact();
+          return await _showDeleteConfirmation(conversation);
+        },
+        onDismissed: (direction) async {
+          await _deleteConversation(conversation.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Conversation with ${conversation.otherUserName} deleted',
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              margin: const EdgeInsets.all(16),
+            ),
+          );
+        },
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onLongPress: () {
+              HapticFeedback.mediumImpact();
+              _toggleSelection(conversation.id);
+            },
+            onTap: () {
+              HapticFeedback.lightImpact();
+              if (_selectedConversations.isNotEmpty) {
+                _toggleSelection(conversation.id);
+              } else {
+                _navigateToChatScreen(conversation);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  if (_selectedConversations.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color:
+                              isSelected
+                                  ? Colors.greenAccent
+                                  : Colors.grey[700],
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          isSelected
+                              ? Icons.check
+                              : Icons.check_box_outline_blank,
+                          color: isSelected ? Colors.black : Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  _buildAvatar(conversation),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                conversation.otherUserName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              DateFormat(
+                                'h:mm a',
+                              ).format(conversation.lastMessageTime),
+                              style: TextStyle(
+                                color: Colors.grey[400],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                conversation.lastMessage,
+                                style: TextStyle(
+                                  color: Colors.grey[300],
+                                  fontSize: 14,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (conversation.unreadMessagesCount > 0)
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.greenAccent,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  conversation.unreadMessagesCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAvatar(Conversation conversation, ColorScheme colorScheme) {
+  Widget _buildAvatar(Conversation conversation) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
-          width: 48,
-          height: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                colorScheme.primary.withOpacity(0.2),
-                colorScheme.secondary.withOpacity(0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            border: Border.all(color: Colors.greenAccent, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.greenAccent.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child:
-              conversation.otherUserAvatar != null
-                  ? ClipOval(
-                    child: Image.network(
-                      conversation.otherUserAvatar!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                  : Center(
-                    child: Text(
+          child: CircleAvatar(
+            radius: 28,
+            backgroundColor: Colors.grey[700],
+            backgroundImage:
+                conversation.otherUserAvatar != null
+                    ? NetworkImage(conversation.otherUserAvatar!)
+                    : null,
+            child:
+                conversation.otherUserAvatar == null
+                    ? Text(
                       conversation.otherUserName[0].toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
+                        color: Colors.white,
                       ),
-                    ),
-                  ),
+                    )
+                    : null,
+          ),
         ),
         if (conversation.unreadMessagesCount > 0)
           Positioned(
             right: -4,
             top: -4,
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: Colors.red[600],
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
               child: Text(
-                conversation.unreadMessagesCount.toString(),
+                conversation.unreadMessagesCount > 9
+                    ? '9+'
+                    : conversation.unreadMessagesCount.toString(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 10,
@@ -524,47 +750,92 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Future<void> _showFilterDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    const filters = {
+      'all': 'All Conversations',
+      'unread': 'Unread Only',
+      'today': 'Today',
+      'week': 'This Week',
+      'month': 'This Month',
+    };
+
+    showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Filter Conversations'),
+            backgroundColor: Colors.grey[850],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.filter_list, color: Colors.greenAccent),
+                const SizedBox(width: 12),
+                const Text(
+                  'Filter Conversations',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             content: SizedBox(
               width: double.maxFinite,
-              child: ListView(
-                shrinkWrap: true,
-                children: [
-                  _buildFilterOption('All Conversations', 'all'),
-                  _buildFilterOption('Unread Only', 'unread'),
-                  _buildFilterOption('Today', 'today'),
-                  _buildFilterOption('This Week', 'week'),
-                  _buildFilterOption('This Month', 'month'),
-                ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children:
+                    filters.entries.map((entry) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          color:
+                              _filter == entry.key
+                                  ? Colors.greenAccent.withOpacity(0.2)
+                                  : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color:
+                                _filter == entry.key
+                                    ? Colors.greenAccent
+                                    : Colors.grey[600]!,
+                          ),
+                        ),
+                        child: RadioListTile<String>(
+                          value: entry.key,
+                          groupValue: _filter,
+                          title: Text(
+                            entry.value,
+                            style: TextStyle(
+                              color:
+                                  _filter == entry.key
+                                      ? Colors.greenAccent
+                                      : Colors.white70,
+                              fontWeight:
+                                  _filter == entry.key
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setState(() => _filter = val!);
+                            Navigator.pop(context);
+                          },
+                          activeColor: Colors.greenAccent,
+                        ),
+                      );
+                    }).toList(),
               ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
+                child: Text(
+                  'Close',
+                  style: TextStyle(color: Colors.greenAccent),
+                ),
               ),
             ],
           ),
-    );
-
-    if (result != null) {
-      setState(() => _filter = result['value']);
-    }
-  }
-
-  Widget _buildFilterOption(String title, String value) {
-    return ListTile(
-      title: Text(title),
-      trailing: Radio<String>(
-        value: value,
-        groupValue: _filter,
-        onChanged: (val) => Navigator.pop(context, {'value': val}),
-      ),
-      onTap: () => Navigator.pop(context, {'value': value}),
     );
   }
 
@@ -573,21 +844,42 @@ class _ChatListScreenState extends State<ChatListScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete Conversation'),
+            backgroundColor: Colors.grey[850],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange[400]),
+                const SizedBox(width: 12),
+                const Text(
+                  'Delete Conversation',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             content: Text(
-              'Are you sure you want to delete the conversation with ${conversation.otherUserName}?',
+              'Are you sure you want to delete the conversation with ${conversation.otherUserName}? This action cannot be undone.',
+              style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey[400]),
                 ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[600],
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
               ),
             ],
           ),
@@ -612,17 +904,43 @@ class _ChatListScreenState extends State<ChatListScreen> {
       for (final id in _selectedConversations) {
         await _deleteConversation(id);
       }
+      final count = _selectedConversations.length;
       setState(() => _selectedConversations.clear());
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Deleted ${_selectedConversations.length} conversations',
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Text('Deleted $count conversations'),
+            ],
           ),
+          backgroundColor: Colors.green[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting conversations: $e')),
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text('Error deleting conversations: $e')),
+            ],
+          ),
+          backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
       );
     }
   }
@@ -632,21 +950,42 @@ class _ChatListScreenState extends State<ChatListScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Delete Conversations'),
+            backgroundColor: Colors.grey[850],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange[400]),
+                const SizedBox(width: 12),
+                const Text(
+                  'Delete Conversations',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
             content: Text(
-              'Are you sure you want to delete ${_selectedConversations.length} conversations?',
+              'Are you sure you want to delete ${_selectedConversations.length} conversations? This action cannot be undone.',
+              style: const TextStyle(color: Colors.white70, height: 1.4),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Delete',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey[400]),
                 ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[600],
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete All'),
               ),
             ],
           ),
@@ -655,26 +994,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Future<void> _deleteConversation(String conversationId) async {
     try {
-      // Optimistically update the UI first
       setState(() {
         _selectedConversations.remove(conversationId);
       });
 
-      // Then perform the actual deletion
       await _supabase.from('conversations').delete().eq('id', conversationId);
-
-      // Refresh the unread count
       Provider.of<MessageProvider>(context, listen: false).loadUnreadCount();
     } catch (e) {
-      // If deletion fails, show error and revert UI
       setState(() {
         if (!_selectedConversations.contains(conversationId)) {
           _selectedConversations.add(conversationId);
         }
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting conversation: $e')),
-      );
       rethrow;
     }
   }

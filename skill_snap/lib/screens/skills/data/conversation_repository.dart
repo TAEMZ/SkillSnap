@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'conversation_model.dart';
-import '../data/message_model.dart';
 
 // conversation_repository.dart
 class ConversationRepository {

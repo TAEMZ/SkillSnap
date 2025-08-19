@@ -22,7 +22,7 @@ class ActivityRepository {
       if (response == null) return [];
       if (response is! List) return [];
 
-      return (response as List).map((json) {
+      return (response).map((json) {
         final type = json['type'] as String;
         IconData icon;
         Color color;

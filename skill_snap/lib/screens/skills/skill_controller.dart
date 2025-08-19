@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/superbase_service.dart';
 import './data/sklil_repository.dart';
 import 'data/rating_model.dart';
 
