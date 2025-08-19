@@ -24,7 +24,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 
 ### Home & Navigation
 <div align="center">
-  <img src="assets/img1.png" width="200" alt="Home Screen">
+  <img src="assets/img15.png" width="200" alt="Home Screen">
   <img src="assets/img2.png" width="200" alt="Navigation Drawer">
   <img src="assets/img3.png" width="200" alt="Categories">
 </div>
@@ -54,7 +54,7 @@ It provides a seamless experience to capture skills, categorize them, and presen
 <div align="center">
   <img src="assets/img13.png" width="200" alt="Search Functionality">
   <img src="assets/img14.png" width="200" alt="Dark Mode">
-  <img src="assets/img15.png" width="200" alt="Skill Analytics">
+  <img src="assets/img1.png" width="200" alt="Skill Analytics">
 </div>
 
 ---
