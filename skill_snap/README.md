@@ -5,8 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![GitHub stars](https://img.shields.io/github/stars/TAEMZ/SkillSnap?style=social)
 
-SkillSnap is a mobile application built with **Flutter** that allows users to showcase, manage, and share their skills in a visually engaging way.  
-It provides a seamless experience to capture skills, categorize them, and present them in a structured portfolio format.
+SkillSnap is a peer-to-peer skill-sharing application built with Flutter, designed to empower users to exchange knowledge in an interactive and engaging way. The platform enables real-time skill sharing through chats, video calls, and live sessions, allowing users to use knowledge itself as a form of currency. Beyond direct exchanges, SkillSnap enhances learning by recommending online courses tailored to users’ skill sets, offering daily problem-solving challenges, and providing tools to track progress and showcase skills in a structured portfolio format.
 
 ---
 
@@ -61,12 +60,13 @@ It provides a seamless experience to capture skills, categorize them, and presen
 
 ## 🛠️ Tech Stack
 
-| Tool / Framework | Icon |
-|------------------|------|
-| Flutter          | 🐦 |
-| Dart             | 🎯 |
-| Firebase (optional, if used) | 🔥 |
-| Android/iOS SDK  | 📱 |
+| Tool / Framework 
+|-----------------
+| Flutter         
+| Dart             
+| Superbase 
+| Android/iOS SDK  
+|Gemini AI
 
 ---
 
